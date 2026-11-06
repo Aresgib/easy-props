@@ -6,6 +6,7 @@
  */
 
 import {z} from 'zod'
+import {APPEARANCE, type Appearance} from '../style/appearance'
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {CollisionShape, PartGenerator, PropGenerator} from '../shared/generator-types'
 import {
@@ -83,6 +84,7 @@ const VARIATION = number(SURFACE, 'variation', 'Variation', 'How much one face d
 const specs: readonly ParameterSpec[] = [KIND, WIDTH, HEIGHT, DEPTH, CHUNKS, FACES, CUTS, EDGES, BEND, MOSS, VARIATION, PALETTE, ...STONE.specs]
 
 export interface CutRockParameters extends Partial<OwnColourValues<typeof STONE_ROWS>> {
+    readonly appearance: Appearance
     readonly kind: RockKind
     readonly width: number
     readonly height: number
@@ -98,6 +100,7 @@ export interface CutRockParameters extends Partial<OwnColourValues<typeof STONE_
 }
 
 export const cutRockDefaults: CutRockParameters = {
+    appearance: APPEARANCE.default,
     kind: KIND.default,
     width: WIDTH.default,
     height: HEIGHT.default,
@@ -113,6 +116,7 @@ export const cutRockDefaults: CutRockParameters = {
 }
 
 const cutRockSchema = z.object({
+    appearance: choiceSchema(APPEARANCE),
     kind: choiceSchema(KIND),
     width: numberSchema(WIDTH),
     height: numberSchema(HEIGHT),
@@ -168,7 +172,7 @@ export const cutRockBodyGenerator: PartGenerator<CutRockBodyParameters> = {
             geometry: buildRockMesh(planRock(rock, seed), rock, seed, detail),
             material: 'painted',
             role: 'solid',
-            surface: {vertexColors: true},
+            surface: {vertexColors: true, appearance: rock.appearance},
         }
     },
 }
@@ -203,7 +207,7 @@ export const cutRockGenerator: PropGenerator<CutRockParameters> = {
     id: 'cut-rock',
     version: 1,
     label: 'Rock',
-    parameters: specs,
+    parameters: [APPEARANCE, ...specs],
     paintsOwnColours: true,
     still: true,
     budgetAdvice: 'Lower Chunks or Faces.',

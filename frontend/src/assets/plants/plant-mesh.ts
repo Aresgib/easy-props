@@ -7,6 +7,7 @@
  */
 
 import * as THREE from 'three'
+import type {Appearance} from '../style/appearance'
 import {createSeededRandom, hashSeed, randomRange, type RandomSource} from '../shared/random'
 import {FLOWER_ROWS, rampOf, type OwnColourValues, type OwnColours} from '../style/own-colours'
 import {FLOWER_CENTRE, PETAL_RAMPS, STEM_RAMP, type PetalPaletteId} from '../style/palettes'
@@ -15,6 +16,7 @@ import {colourRamp} from '../style/ramp'
 export type PlantKind = 'daisy' | 'cup' | 'spike' | 'plume'
 
 export interface PlantParameters extends Partial<OwnColourValues<typeof FLOWER_ROWS>> {
+    readonly appearance: Appearance
     readonly kind: PlantKind
     readonly width: number
     readonly height: number

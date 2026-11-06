@@ -1,0 +1,18 @@
+Flora Forge
+Copyright (C) 2026 Flora Forge contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU General Public License for more details, included in COPYING.
+
+The generated models, exported textures and generated Godot resources
+may be used in commercial and noncommercial games. The original
+foliage_atlas.png, bark_atlas.png and Godot helper files in this package are additionally
+available under CC0-1.0 (https://creativecommons.org/publicdomain/zero/1.0/).
+The Blender add-on source remains GPL-3.0-or-later.

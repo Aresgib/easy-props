@@ -14,6 +14,7 @@ import type {SceneComponent} from '../../assets/shared/component-types'
 import type {GeneratedPart, MaterialKind} from '../../assets/shared/generator-types'
 import {darken, lighten, MATERIAL_COLORS} from '../../assets/style/materials'
 import {createPartMaterial} from '../../assets/style/part-material'
+import {prepareToonColours} from '../../assets/style/toon-colours'
 import {createWindUniforms, createWindMaterial, measureWind, type WindUniforms} from './wind-material'
 import {addLiveWind, createLiveWindDepthMaterial, createLiveWindUniforms, type LiveWindUniforms} from './live-wind'
 import {findPropGenerator} from '../../assets/prop-generators'
@@ -224,6 +225,7 @@ function buildComponent(
 function reprint(component: RenderedComponent, part: GeneratedPart | undefined): void {
     const map = part?.surface?.map ?? null
     const {lit, flat} = component.materials
+    if (part) prepareToonColours(part.geometry, part.surface?.appearance)
     const depth = component.mesh.customDepthMaterial as THREE.MeshDepthMaterial
 
     for (const material of [lit, flat, component.outline.material as THREE.MeshBasicMaterial, depth]) {
@@ -232,7 +234,9 @@ function reprint(component: RenderedComponent, part: GeneratedPart | undefined):
         material.map = map
     }
 
-    lit.normalMap = part?.surface?.normalMap ?? null
+    const normalMap = part?.surface?.normalMap ?? null
+    if (!!lit.normalMap !== !!normalMap) lit.needsUpdate = true
+    lit.normalMap = normalMap
 }
 
 /** A style id that also says which detail level is showing. Full detail is just the style. */
@@ -448,7 +452,13 @@ export function createComponentRenderer(onContentArrived?: () => void): Componen
                 continue
             }
 
-            const build = generator.buildOffThread(generator.validate(component.parameters).parameters, style, detail)
+            const parameters = generator.validate(component.parameters).parameters
+            const nextAppearance = generator.dress?.(existing.mesh.geometry, parameters).surface?.appearance ?? 'natural'
+            // A different shader needs new materials and wind hooks as well as a
+            // new mesh. The normal rebuild below creates them together.
+            if (existing.materials.lit.userData.appearance !== nextAppearance) continue
+
+            const build = generator.buildOffThread(parameters, style, detail)
 
             if (!build) {
                 continue

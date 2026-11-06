@@ -9,6 +9,7 @@
  */
 
 import * as THREE from 'three'
+import type {Appearance} from '../style/appearance'
 import {createSeededRandom, hashSeed, randomRange, type RandomSource} from '../shared/random'
 import {CACTUS_ROWS, FLOWER_ROWS, rampOf, type OwnColourValues, type OwnColours} from '../style/own-colours'
 import {CACTUS_RAMPS, PETAL_RAMPS, type CactusPaletteId, type PetalPaletteId} from '../style/palettes'
@@ -17,6 +18,7 @@ import {colourRamp} from '../style/ramp'
 export type CactusKind = 'column' | 'barrel' | 'paddle'
 
 export interface CactusParameters extends Partial<OwnColourValues<typeof CACTUS_ROWS> & OwnColourValues<typeof FLOWER_ROWS>> {
+    readonly appearance: Appearance
     readonly kind: CactusKind
     readonly height: number
     /** Across the main stem, or across a pad. */

@@ -292,6 +292,18 @@ const rockPresets: readonly TreePreset[] = [
     rock('Cliffs', 'red-mesa', 'Red mesa', 'Flat topped and warm', 409, {kind: 'cliff', width: 16, height: 6, depth: 11, chunks: 14, moss: 0, palette: 'redrock'}),
 ]
 
+const forgePresets: readonly TreePreset[] = [
+    painted('Broadleaf', 'ghibli-tree', 'Ghibli tree', 'Cool shadows, warm leaves and painted wood', 74101, {appearance: 'ghibli', leafPattern: 'tree-leaves-03', secondLeafPattern: 'tree-leaves-02', leafMix: 0.25, palette: 'spring', barkTone: 'ash', height: 6, spread: 6.5, trunkRadius: 0.2, clumpCount: 10, clumpMerge: 0.3, clumpFlatten: 0.2, fullness: 0.8, leafSize: 1, rootCount: 0, flare: 0.15, limbCount: 5, branchCount: 2, twigCount: 0, gnarl: 0.35, ridgeDepth: 0.03, barkDetail: 0.7, brushStrokes: 1.5, moss: 0.2}),
+    bush('ghibli-bush', 'Ghibli bush', 'Soft painted greens and blue-green shade', 74102, {appearance: 'ghibli', leafPattern: 'tree-leaves-02', secondLeafPattern: 'tree-leaves-03', leafMix: 0.35, palette: 'lush', width: 2.8, height: 1.8, depth: 2.4, fullness: 3, leafSize: 0.16}),
+    plant('ghibli-flowers', 'Ghibli flowers', 'Gentle pink petals over cool green stems', 74103, {appearance: 'ghibli', width: 1.1, height: 0.6, stems: 15, headSize: 0.1, leaves: 3, palette: 'pink'}),
+    painted('Broadleaf', 'fluffy-oak', 'Fluffy oak', 'Soft leaves and painted light', 73101, {appearance: 'fluffy', leafPattern: 'oak', secondLeafPattern: 'oval', leafMix: 0.25, palette: 'spring', height: 6, spread: 5.5, trunkRadius: 0.28, clumpCount: 8, fullness: 0.6, leafSize: 0.9, rootCount: 3, limbCount: 4, branchCount: 2, twigCount: 0, barkDetail: 0.7}),
+    painted('Broadleaf', 'fluffy-birch', 'Fluffy birch', 'Gold leaves over pale wood', 73102, {appearance: 'fluffy', leafPattern: 'oval', palette: 'golden', barkTone: 'birch', barkPattern: 'banded', crownShape: 'natural', height: 7, spread: 3.2, trunkRadius: 0.14, clumpCount: 9, fullness: 0.55, leafSize: 0.85, rootCount: 2, limbCount: 4, branchCount: 2, twigCount: 0, barkDetail: 0.7}),
+    painted('Broadleaf', 'ink-maple', 'Ink maple', 'Bright colour with dark edges', 73103, {appearance: 'ink', leafPattern: 'maple', palette: 'maple', height: 5, spread: 5, trunkRadius: 0.24, clumpCount: 8, fullness: 0.6, rootCount: 3, limbCount: 4, branchCount: 2, twigCount: 0, barkDetail: 0.7}),
+    painted('Weeping', 'vine-tree', 'Vine tree', 'Leafy stems falling from the crown', 73104, {appearance: 'fluffy', leafPattern: 'oval', secondLeafPattern: 'oak', leafMix: 0.3, palette: 'forest', height: 6, spread: 5, trunkRadius: 0.3, clumpCount: 8, fullness: 0.55, vines: 12, vineLength: 0.8, vineCurl: 0.5, rootCount: 3, limbCount: 4, branchCount: 2, twigCount: 0, barkDetail: 0.7}),
+    bush('fluffy-bush', 'Fluffy bush', 'Small leaves in soft painted clumps', 73105, {appearance: 'fluffy', leafPattern: 'oval', secondLeafPattern: 'oak', leafMix: 0.3, palette: 'spring', width: 2, height: 1.4, depth: 1.8, leafSize: 0.17, fullness: 2.5}),
+    painted('Broadleaf', 'cel-oak', 'Cel oak', 'A crown shaded in bands of colour', 73101, {appearance: 'cel', leafPattern: 'oak', palette: 'spring', height: 6, spread: 5.5, trunkRadius: 0.28, clumpCount: 8, fullness: 0.6, leafSize: 0.9, rootCount: 3, limbCount: 4, branchCount: 2, twigCount: 0, barkDetail: 0.7}),
+]
+
 export const treePresets: readonly TreePreset[] = [
     {
         id: 'round-canopy',
@@ -345,6 +357,7 @@ export const treePresets: readonly TreePreset[] = [
     },
     ...paintedPresets,
     ...foliagePresets,
+    ...forgePresets,
     ...rockPresets,
 ]
 

@@ -70,6 +70,10 @@ The builds aren't signed yet, so the first launch shows a warning:
 
 ## Build from source
 
+##https://www.artstation.com/marketplace/p/YDXDW/stylized-flowers?utm_source=artstation&utm_medium=referral&utm_campaign=artwork_search&utm_term=marketplace
+
+https://reipart.gumroad.com/l/clovers?layout=profile&recommended_by=more_like_this&recommender_model_name=sales&_gl=1*10x16wr*_ga*MTA2Njg4OTc2MC4xNzg0MDQxODM2*_ga_6LJN6D94N6*czE3OTM5MTUxODgkbzUkZzEkdDE3OTM5MTUyODkkajUyJGwwJGgw
+
 You need Go, Node.js, pnpm, [golangci-lint](https://golangci-lint.run/) and the
 [Wails CLI](https://wails.io). `wails doctor` should report success. On Windows, `choco install make` provides `make`, and it also needs Git
 for Windows in its default folder.

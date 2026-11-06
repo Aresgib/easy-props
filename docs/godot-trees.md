@@ -4,6 +4,42 @@ How to get a tree from easy-props into Godot with its leaves and wind working. T
 on Godot 4.6 with one tree, on 2026-10-31. See [Not tested yet](#not-tested-yet) for the
 parts still unproven.
 
+## Fluffy, Cel and Ink
+
+Trees and bushes now offer **Material** under **Appearance**. Natural uses the scene
+light. Fluffy uses soft painted light, Cel divides it into colour bands, and Ink adds
+dark surface edges. These choices are also available on rocks, grass, flowers and cacti.
+Cel uses one set of colour bands across each volume, with softened transitions to keep
+distant leaves stable. Ink adds fine contours to leaf cut-outs and a narrow dark rim to solid
+parts. It does not darken leaf cards based on their viewing angle, and does not include
+a full-screen outline or post-processing effect.
+
+Under **Leaves**, choose **Leaf shape**, **Other leaf shape** and **Leaf mix** to combine
+original brush patches, oval, oak, maple and needle shapes. The pictures are generated
+inside the app. Bush flowers keep their own picture when leaf shapes change. On trees,
+**Hanging vines** adds curved stems with leaves; their length, thickness, curl and leaves
+can be adjusted. A vine belongs to its leaf clump and follows edits to that clump.
+
+For these three painted materials, exporting with **Engine: Godot** includes a ready
+`.tscn`, native `.gdshader`, `.tres` materials, generated PNG pictures, a setup script and
+a `.godot.json` description beside the usual GLBs. Copy the entire folder into the
+Godot project and open the `.tscn`. No Save kit step is needed for these materials.
+The scene assigns materials in the editor and at runtime, including when parts were
+joined. It uses the app's detail levels at 18 and 40 metres and keeps the final level
+visible beyond that. It raises the automatic detail bias to preserve disconnected
+leaves. A separately exported far-away card remains available as a GLB for manual setup.
+
+The generated materials' **Wind Amount** is 1 when wind data was exported, otherwise 0.
+Stems sway with their leaves, and the stems themselves do not flutter. The standalone
+GLB retains colour, leaf cut-outs and authored shading directions using standard
+materials. The painted light, colour bands and ink edges require the native shader;
+the Godot material is not transferred to another engine through GLB.
+
+The six new presets are **Fluffy oak**, **Fluffy birch**, **Cel oak**, **Ink maple**,
+**Vine tree** and **Fluffy bush**. Their exports were loaded in Godot 4.7.2; their
+materials were compiled and rendered with Compatibility on Intel UHD Graphics.
+The following manual kit instructions apply to **Natural** and the older exports.
+
 ## Quick checklist
 
 For someone who has done this before:

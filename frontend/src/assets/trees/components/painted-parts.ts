@@ -11,6 +11,8 @@
  */
 
 import * as THREE from 'three'
+import {getFoliageTexture} from '../../shared/foliage-texture'
+import {getPaintedBarkTexture} from '../../shared/painted-bark-texture'
 import type {PartGenerator} from '../../shared/generator-types'
 import type {ParameterSpec, ValidationResult} from '../../shared/parameters'
 import type {StyleProfile} from '../../style/style-profiles'
@@ -23,7 +25,6 @@ import {
     COLOUR_KEYS,
     getBarkRelief,
     getBarkTexture,
-    getDabTexture,
     parseEdits,
     planPaintedTree,
     resolvePalette,
@@ -75,6 +76,14 @@ const LEAF_ONLY_KEYS: readonly (keyof PaintedTreeParameters)[] = [
     'lumpiness',
     'strands',
     'strandLength',
+    'vines',
+    'vineLength',
+    'vineThickness',
+    'vineCurl',
+    'vineLeaves',
+    'leafPattern',
+    'secondLeafPattern',
+    'leafMix',
     'frondStyle',
     'fruitCount',
     'fruitKind',
@@ -120,13 +129,15 @@ export const paintedBarkGenerator: PartGenerator<PaintedPartParameters> = {
     scalesWithDetail: true,
 
     dress(geometry, {tree}) {
+        const painted = tree.barkFinish === 'painted' || (tree.barkFinish === 'match' && tree.appearance === 'ghibli')
         return {
             geometry,
             material: 'painted',
             surface: {
                 vertexColors: true,
-                map: getBarkTexture(tree.brushStrokes, tree.barkPattern),
-                normalMap: getBarkRelief(tree.barkPattern),
+                appearance: tree.appearance,
+                map: painted ? getPaintedBarkTexture(tree.brushStrokes, tree.barkPattern) : getBarkTexture(tree.brushStrokes, tree.barkPattern),
+                normalMap: painted ? undefined : getBarkRelief(tree.barkPattern),
             },
             role: 'solid',
         }
@@ -268,6 +279,15 @@ export const paintedClumpGenerator: PartGenerator<PaintedKeyedParameters> = {
             tree.height,
             tree.strands,
             tree.strandLength,
+            tree.vines,
+            tree.vineLength,
+            tree.vineThickness,
+            tree.vineCurl,
+            tree.vineLeaves,
+            tree.appearance,
+            tree.leafPattern,
+            tree.secondLeafPattern,
+            tree.leafMix,
             tree.frondStyle,
             tree.fruitCount,
             tree.fruitKind,
@@ -299,7 +319,7 @@ export const paintedClumpGenerator: PartGenerator<PaintedKeyedParameters> = {
                   )
                 : new THREE.BufferGeometry(),
             material: 'painted',
-            surface: {vertexColors: true, map: getDabTexture(), alphaTest: 0.5, receiveShadow: false},
+            surface: {vertexColors: true, appearance: tree.appearance, map: getFoliageTexture(tree), alphaTest: 0.5, receiveShadow: false},
             role: 'foliage',
         }
     },

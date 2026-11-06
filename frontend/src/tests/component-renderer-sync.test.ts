@@ -113,6 +113,26 @@ describe('showing a tree while its bark is built elsewhere', () => {
         expect(clumpMesh(renderer)).not.toBe(leavesBefore)
     })
 
+    it('changes the wood and leaf materials together when choosing another look', async () => {
+        const {builds, renderer, scene, assetId} = setUp()
+        await finishWarmUp(builds)
+        let current = scene
+
+        for (const appearance of ['fluffy', 'cel', 'ink', 'ghibli', 'natural']) {
+            const oldMaterial = renderer.get('cmp-bark-0')!.materials.lit
+            current = updateTreeParameters(current, assetId, {appearance}, STYLE)
+            renderer.sync(current, STYLE, 'lit')
+            expect(builds).toHaveLength(0)
+            expect(renderer.get('cmp-bark-0')!.materials.lit).not.toBe(oldMaterial)
+            const parts = renderer.all().filter((part) => !part.mesh.userData.isProxy)
+            expect(parts.every((part) => part.materials.lit.userData.appearance === appearance)).toBe(true)
+            if (appearance === 'cel' || appearance === 'ink' || appearance === 'ghibli') {
+                expect(parts.every((part) => !!part.mesh.geometry.getAttribute('paintColour'))).toBe(true)
+            }
+        }
+        renderer.dispose()
+    }, 15000)
+
     it('rebuilds in place if the workers fail', async () => {
         const {builds, renderer, scene, assetId} = setUp()
 

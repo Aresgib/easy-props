@@ -13,6 +13,7 @@ import {EVEN_REACH, measureWindExtent, type WindExtent} from './wind'
 import {yieldIfBusy} from './yield'
 import {writeGLB, type NamedMesh} from '../glb-exporter'
 import {LEVEL_SHARES, type ExportFile, type ExportSettings, type ExportSource} from './types'
+import {GodotBundle} from '../godot-bundle'
 
 export const ASSET_FORMAT_VERSION = 1
 
@@ -46,6 +47,7 @@ export async function buildExport(
     const far = settings.far === true && source.farAway?.() === true
     const total = levels + (settings.collision ? 1 : 0) + (far ? 1 : 0)
     const hasWind = settings.wind && source.sways()
+    const godot = engine === 'godot' ? new GodotBundle(name, hasWind) : null
     let extent: WindExtent | undefined
     let card: FarCard | null = null
     let done = 0
@@ -117,6 +119,8 @@ export async function buildExport(
         const faces = meshes.reduce((sum, mesh) => sum + mesh.faces, 0)
         const fileName = levels > 1 ? `${name}_LOD${level}.glb` : `${name}.glb`
 
+        godot?.addLevel(level, fileName, meshes, level === levels - 1)
+
         faceCounts[`LOD${level}`] = faces
         files.push({name: fileName, bytes: new Uint8Array(await writeGLB([...meshes, ...shapeNodes], name)), faces})
         disposeParts(parts)
@@ -143,6 +147,7 @@ export async function buildExport(
     }
 
     files.push({name: `${name}.asset.json`, bytes: new TextEncoder().encode(`${JSON.stringify(asset, null, 4)}\n`)})
+    if (godot) files.push(...await godot.files(files.find((file) => file.name.endsWith('_collision.glb'))?.name))
 
     return files.sort((a, b) => a.name.localeCompare(b.name))
 }

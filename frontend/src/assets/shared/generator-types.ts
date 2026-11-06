@@ -12,6 +12,7 @@ import type {StyleProfile} from '../style/style-profiles'
 import type {ComponentType, Transform} from './component-types'
 import type {ParameterSpec, ValidationResult} from './parameters'
 import type {RandomSource} from './random'
+import type {Appearance} from '../style/appearance'
 
 export type MaterialKind = 'bark' | 'bark-light' | 'leaves' | 'leaves-dark' | 'coconut' | 'painted'
 
@@ -40,6 +41,7 @@ export interface CollisionShape {
  */
 export interface PaintedSurface {
     readonly vertexColors: boolean
+    readonly appearance?: Appearance
     readonly map?: THREE.Texture
     /** Fine relief for light to catch. Needs a `map`, whose texture coordinates it shares. */
     readonly normalMap?: THREE.Texture

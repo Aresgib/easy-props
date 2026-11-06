@@ -60,7 +60,10 @@ export function addLiveWind(
     live: LiveWindUniforms,
     foliage: boolean,
 ): void {
-    material.onBeforeCompile = (shader) => {
+    const previous = material.onBeforeCompile
+    const previousKey = material.customProgramCacheKey()
+    material.onBeforeCompile = (shader, renderer) => {
+        previous.call(material, shader, renderer)
         shader.uniforms.windPivot = measured.pivot
         shader.uniforms.windHeight = measured.height
         shader.uniforms.windReach = measured.reach
@@ -74,7 +77,7 @@ export function addLiveWind(
             )
     }
     // Leaves and wood compile differently, so they cannot share a program.
-    material.customProgramCacheKey = () => (foliage ? 'live-wind-leaves' : 'live-wind')
+    material.customProgramCacheKey = () => `${previousKey}:${foliage ? 'live-wind-leaves' : 'live-wind'}`
 }
 
 /** What a part's shadow is drawn with, so the shadow moves with it. */

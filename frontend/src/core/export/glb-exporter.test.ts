@@ -36,6 +36,8 @@ const LEVEL_KNOWN_MISSES: Readonly<Record<string, number>> = {
     'round-canopy': 0.07,
     // A column crown is mostly side branches hidden in its leaves, and the lightest level drops them.
     poplar: 0.01,
+    // Its fine birch branches disappear at distance; the silhouette check below still applies.
+    'fluffy-birch': 0.025,
 }
 
 interface Accessor {

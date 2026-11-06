@@ -17,8 +17,9 @@
  */
 
 import * as THREE from 'three'
+import type {FoliageAppearance} from '../style/appearance'
 import {mergeVertices} from 'three/examples/jsm/utils/BufferGeometryUtils.js'
-import {BLOOM_CELL, LEAF_VARIANTS, leafCell} from '../shared/leaf-texture'
+import {foliageCell, foliageFlowerCell} from '../shared/foliage-layout'
 import {createSeededRandom, hashSeed, randomRange, type RandomSource} from '../shared/random'
 import {colourRamp} from '../style/ramp'
 import {FLOWER_ROWS, LEAF_ROWS, rampOf, type OwnColourValues, type OwnColours} from '../style/own-colours'
@@ -29,7 +30,7 @@ export type BushKind = 'round' | 'spreading' | 'tall' | 'hedge'
 /** Solid hides everything behind it. Open has twigs and sky inside. */
 export type BushInside = 'solid' | 'open'
 
-export interface BushParameters extends Partial<OwnColourValues<typeof LEAF_ROWS> & OwnColourValues<typeof FLOWER_ROWS>> {
+export interface BushParameters extends FoliageAppearance, Partial<OwnColourValues<typeof LEAF_ROWS> & OwnColourValues<typeof FLOWER_ROWS>> {
     readonly kind: BushKind
     readonly width: number
     readonly height: number
@@ -607,7 +608,7 @@ export function buildBushLeaves(bush: BushParameters, seed: number, detail: numb
         const shading = normalize([normal[0], normal[1] + SKY_BIAS, normal[2]])
         const value = shape.value(point, normal, bush.variation) + randomRange(random, -0.04, 0.04) - (deep ? DEEP_CARD_SHADE : 0)
         const colour = flower ? petal(0.35 + random() * 0.65).clone() : paint(value).clone()
-        const [u0, v0, size] = leafCell(flower ? BLOOM_CELL : Math.floor(random() * LEAF_VARIANTS))
+        const [u0, v0, size] = flower ? foliageFlowerCell(bush) : foliageCell(bush, random(), true)
         const base = positions.length / 3
 
         for (const [a, b] of CORNERS) {

@@ -14,10 +14,11 @@
 
 import * as THREE from 'three'
 import {createSeededRandom, hashSeed, randomRange} from '../../shared/random'
-import {DAB_VARIANTS, dabCell} from '../../shared/dab-texture'
+import {foliageCell, foliageSolidUv} from '../../shared/foliage-layout'
 import {addClumpFruit, addStrands, leafGeometry} from './frond-mesh'
 import {resolvePalette, type PaintedTreeParameters} from './parameters'
 import {cross, normalize, perpendicularTo, type Clump, type TreePlan, type Vec3} from './plan'
+import {addVines} from './vines'
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5))
 /** How much of a shading normal comes from the whole crown, not the clump. */
@@ -283,7 +284,7 @@ export function buildClump(
                 share < 1 && !outline && createSeededRandom(hashSeed(clump.seed, 1000 + cardNumber++))() >= share
             const pull = (half - plainHalf) * GROWTH_PULL
             const pulled = r - pull
-            const [u0, v0, size] = dabCell(Math.floor(random() * DAB_VARIANTS))
+            const [u0, v0, size] = foliageCell(tree, random())
             const jitter = randomRange(random, -0.07, 0.07) * (0.5 + tree.colourVariation)
             const thinOut = random() < 0.5
 
@@ -367,7 +368,11 @@ export function buildClump(
         addCards(lobe, count, 0.84, 1.03, 1, 0, true)
     }
 
-    const buffers = {positions, normals, colors, uvs, indices, rigid: [] as number[]}
+    const buffers = {positions, normals, colors, uvs, indices, rigid: [] as number[], solidUv: foliageSolidUv(tree)}
+
+    if (tree.vines > 0) {
+        addVines(buffers, plan, clump, tree, share)
+    }
 
     if (tree.strands > 0) {
         addStrands(buffers, clump, tree, detail, share)

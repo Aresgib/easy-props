@@ -6,6 +6,7 @@
  */
 
 import {z} from 'zod'
+import {APPEARANCE} from '../style/appearance'
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {PartGenerator, PropGenerator} from '../shared/generator-types'
 import {
@@ -89,6 +90,7 @@ const FLOWERS = number(COLOUR, 'flowers', 'Flowers', 'How many flowers stand amo
 const specs: readonly ParameterSpec[] = [WIDTH, HEIGHT, COUNT, CLUMPS, GATHER, LEAN, SCATTER, BLADE_WIDTH, SMOOTHNESS, TALL, DRYNESS, VARIATION, PALETTE, ...OWN_GRASS.specs, FLOWERS, FLOWER_COLOUR, ...OWN_FLOWERS.specs]
 
 export const grassDefaults: GrassParameters = {
+    appearance: APPEARANCE.default,
     width: WIDTH.default,
     height: HEIGHT.default,
     blades: COUNT.default,
@@ -107,6 +109,7 @@ export const grassDefaults: GrassParameters = {
 }
 
 const grassSchema = z.object({
+    appearance: choiceSchema(APPEARANCE),
     width: numberSchema(WIDTH),
     height: numberSchema(HEIGHT),
     blades: numberSchema(COUNT),
@@ -166,7 +169,7 @@ export const grassBodyGenerator: PartGenerator<GrassBodyParameters> = {
             geometry: buildGrassMesh(grass, seed, detail),
             material: 'painted',
             role: 'foliage',
-            surface: {vertexColors: true, receiveShadow: false},
+            surface: {vertexColors: true, appearance: grass.appearance, receiveShadow: false},
         }
     },
 }
@@ -175,7 +178,7 @@ export const grassGenerator: PropGenerator<GrassParameters> = {
     id: 'grass',
     version: 1,
     label: 'Grass',
-    parameters: specs,
+    parameters: [APPEARANCE, ...specs],
     paintsOwnColours: true,
     swaysEvenly: true,
     budgetAdvice: 'Lower Blades or Smoothness.',

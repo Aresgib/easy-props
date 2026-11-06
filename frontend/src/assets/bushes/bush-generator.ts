@@ -8,7 +8,8 @@
 import {z} from 'zod'
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {PartGenerator, PropGenerator} from '../shared/generator-types'
-import {getLeafTexture} from '../shared/leaf-texture'
+import {getFoliageTexture} from '../shared/foliage-texture'
+import {appearanceDefaults, appearanceSchema, appearanceSpecs} from '../style/appearance'
 import {
     choiceSchema,
     numberSchema,
@@ -115,6 +116,7 @@ const FLOWER_SIZE = number(FLOWERS_GROUP, 'flowerSize', 'Flower size', 'How larg
 const specs: readonly ParameterSpec[] = [KIND, WIDTH, HEIGHT, DEPTH, LOBES, LUMPS, INSIDE, FULLNESS, LEAF_SIZE, VARIATION, PALETTE, ...OWN_LEAVES.specs, FLOWERS, FLOWER_SIZE, FLOWER_COLOUR, ...OWN_FLOWERS.specs]
 
 export const bushDefaults: BushParameters = {
+    ...appearanceDefaults,
     kind: KIND.default,
     width: WIDTH.default,
     height: HEIGHT.default,
@@ -132,6 +134,7 @@ export const bushDefaults: BushParameters = {
 }
 
 const bushSchema = z.object({
+    ...appearanceSchema,
     kind: choiceSchema(KIND),
     width: numberSchema(WIDTH),
     height: numberSchema(HEIGHT),
@@ -190,7 +193,7 @@ export const bushCoreGenerator: PartGenerator<BushPartParameters> = {
             geometry: buildBushCore(bush, seed, detail),
             material: 'painted',
             role: 'solid',
-            surface: {vertexColors: true},
+            surface: {vertexColors: true, appearance: bush.appearance},
         }
     },
 }
@@ -214,7 +217,7 @@ export const bushLeavesGenerator: PartGenerator<BushPartParameters> = {
             geometry: buildBushLeaves(bush, seed, detail),
             material: 'painted',
             role: 'foliage',
-            surface: {vertexColors: true, map: getLeafTexture(), alphaTest: 0.5, receiveShadow: false},
+            surface: {vertexColors: true, appearance: bush.appearance, map: getFoliageTexture(bush, true), alphaTest: 0.5, receiveShadow: false},
         }
     },
 }
@@ -224,7 +227,7 @@ export const bushGenerator: PropGenerator<BushParameters> = {
     version: 1,
     label: 'Bush',
     farAway: () => true,
-    parameters: specs,
+    parameters: [...appearanceSpecs, ...specs],
     paintsOwnColours: true,
     budgetAdvice: 'Lower Fullness or raise Leaf size.',
     fitControls: [

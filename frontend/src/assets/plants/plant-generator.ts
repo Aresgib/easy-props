@@ -3,6 +3,7 @@
  */
 
 import {z} from 'zod'
+import {APPEARANCE} from '../style/appearance'
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {PartGenerator, PropGenerator} from '../shared/generator-types'
 import {
@@ -75,6 +76,7 @@ const HEAD_SIZE = number(FLOWER, 'headSize', 'Flower size', 'Across a flower, or
 const specs: readonly ParameterSpec[] = [WIDTH, HEIGHT, STEMS, LEAN, LEAVES, KIND, HEAD_SIZE, PALETTE, ...OWN_FLOWERS.specs]
 
 export const plantDefaults: PlantParameters = {
+    appearance: APPEARANCE.default,
     kind: KIND.default,
     width: WIDTH.default,
     height: HEIGHT.default,
@@ -86,6 +88,7 @@ export const plantDefaults: PlantParameters = {
 }
 
 const plantSchema = z.object({
+    appearance: choiceSchema(APPEARANCE),
     kind: choiceSchema(KIND),
     width: numberSchema(WIDTH),
     height: numberSchema(HEIGHT),
@@ -137,7 +140,7 @@ export const plantBodyGenerator: PartGenerator<PlantBodyParameters> = {
             geometry: buildPlantMesh(plant, seed, detail),
             material: 'painted',
             role: 'foliage',
-            surface: {vertexColors: true, receiveShadow: false},
+            surface: {vertexColors: true, appearance: plant.appearance, receiveShadow: false},
         }
     },
 }
@@ -146,7 +149,7 @@ export const plantGenerator: PropGenerator<PlantParameters> = {
     id: 'plant',
     version: 1,
     label: 'Flowers',
-    parameters: specs,
+    parameters: [APPEARANCE, ...specs],
     paintsOwnColours: true,
     swaysEvenly: true,
     budgetAdvice: 'Lower Stems or Leaves.',

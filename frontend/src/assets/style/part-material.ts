@@ -6,7 +6,8 @@
  */
 
 import * as THREE from 'three'
-import type {GeneratedPart} from '../shared/generator-types'
+import {roleOfPart, type GeneratedPart} from '../shared/generator-types'
+import {applyAppearance} from './appearance'
 
 const ROUGHNESS = 0.85
 const METALNESS = 0
@@ -18,7 +19,7 @@ export function createPartMaterial(
 ): THREE.MeshStandardMaterial {
     const surface = part.surface
 
-    return new THREE.MeshStandardMaterial({
+    const material = new THREE.MeshStandardMaterial({
         color: new THREE.Color(color),
         roughness: surface ? 1 : ROUGHNESS,
         metalness: METALNESS,
@@ -30,4 +31,6 @@ export function createPartMaterial(
         normalMap: surface?.normalMap ?? null,
         alphaTest: surface?.alphaTest ?? 0,
     })
+    applyAppearance(material, surface?.appearance, part.geometry, roleOfPart(part) === 'foliage')
+    return material
 }

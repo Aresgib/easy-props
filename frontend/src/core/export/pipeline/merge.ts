@@ -12,6 +12,8 @@ import {RIGID_ATTRIBUTE, roleOfPart} from '../../../assets/shared/generator-type
 import {tidyWood} from './tidy'
 import type {PlacedPart, Vec3} from './types'
 import {windAttribute, type WindExtent} from './wind'
+import {applyAppearance} from '../../../assets/style/appearance'
+import {toonColours} from '../../../assets/style/toon-colours'
 
 const ROUGHNESS = 0.85
 const METALNESS = 0
@@ -136,7 +138,7 @@ function normalised(placed: PlacedPart, pivot: Vec3, wind?: WindExtent): THREE.B
     const geometry = new THREE.BufferGeometry()
     const position = source.getAttribute('position')
     const colors = new Float32Array(position.count * 3)
-    const vertexColors = source.getAttribute('color')
+    const vertexColors = part.surface?.appearance === 'cel' || part.surface?.appearance === 'ink' || part.surface?.appearance === 'ghibli' ? toonColours(source) : source.getAttribute('color')
 
     for (let i = 0; i < position.count; i++) {
         colors[i * 3] = (vertexColors ? vertexColors.getX(i) : 1) * tint[0]
@@ -212,7 +214,8 @@ export function mergeParts(
         }
 
         // A textured part cannot share with one that has nowhere to read the texture.
-        const key = `${bucketName(placed)}${placed.part.surface?.map ? '' : '-plain'}`
+        const surface = placed.part.surface
+        const key = JSON.stringify([bucketName(placed), surface?.map?.uuid, surface?.normalMap?.uuid, surface?.alphaTest ?? 0, surface?.appearance ?? 'natural'])
         const bucket = buckets.get(key) ?? []
 
         bucket.push(placed)
@@ -238,24 +241,27 @@ export function mergeParts(
         geometry.translate(-pivot[0], -pivot[1], -pivot[2])
 
         const base = `${name}_${bucketName(bucket[0])}`
-        const meshName = used.has(base) ? `${base}_2` : base
+        let meshName = base
+        for (let suffix = 2; used.has(meshName); suffix++) meshName = `${base}_${suffix}`
 
-        used.add(base)
+        used.add(meshName)
 
+        const material = new THREE.MeshStandardMaterial({
+            name: meshName,
+            color: 0xffffff,
+            roughness: surface ? 1 : ROUGHNESS,
+            metalness: METALNESS,
+            vertexColors: true,
+            map: surface?.map ?? whiteTexture(),
+            normalMap: surface?.normalMap ? reliefForFile(surface.normalMap, fullRelief) : null,
+            normalScale: new THREE.Vector2(1, -1),
+            alphaTest: surface?.alphaTest ?? 0,
+        })
+        applyAppearance(material, surface?.appearance, undefined, roleOfPart(bucket[0].part) === 'foliage')
         merged.push({
             name: meshName,
             geometry,
-            material: new THREE.MeshStandardMaterial({
-                name: meshName,
-                color: 0xffffff,
-                roughness: surface ? 1 : ROUGHNESS,
-                metalness: METALNESS,
-                vertexColors: true,
-                map: surface?.map ?? whiteTexture(),
-                normalMap: surface?.normalMap ? reliefForFile(surface.normalMap, fullRelief) : null,
-                normalScale: new THREE.Vector2(1, -1),
-                alphaTest: surface?.alphaTest ?? 0,
-            }),
+            material,
             faces: geometry.index!.count / 3,
         })
     }

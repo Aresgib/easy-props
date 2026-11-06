@@ -16,6 +16,7 @@ import {
     type ValidationResult,
 } from '../../shared/parameters'
 import {BARK_TONES, PALETTES, type BarkToneId, type Palette, type PaletteId} from '../../style/palettes'
+import {appearanceDefaults, appearanceSchema, appearanceSpecs, type FoliageAppearance} from '../../style/appearance'
 
 export {BARK_TONES, PALETTES}
 export type {BarkToneId, Palette, PaletteId}
@@ -77,6 +78,11 @@ const NUMBERS = {
     leafSize: number(LEAVES, 'leafSize', 'Leaf size', 'How big each patch of leaves is.', 0.5, 1.6, 0.05, 1),
     strands: number(LEAVES, 'strands', 'Hanging strands', 'Curtains of leaves falling from each clump, as on a willow.', 0, 1, 0.05, 0),
     strandLength: number(LEAVES, 'strandLength', 'Strand length', 'How far the strands fall, as a share of the way to the ground.', 0.2, 1, 0.05, 0.7),
+    vines: number('Hanging vines', 'vines', 'Vines', 'Long stems with leaves hanging from the crown.', 0, 32, 1, 0, 'count'),
+    vineLength: number('Hanging vines', 'vineLength', 'Length', 'How far the vines fall towards the ground.', 0.1, 1, 0.05, 0.75),
+    vineThickness: number('Hanging vines', 'vineThickness', 'Thickness', 'How thick each hanging stem is.', 0.005, 0.08, 0.005, 0.015, 'm'),
+    vineCurl: number('Hanging vines', 'vineCurl', 'Curl', 'How much the hanging stems curl as they fall.', 0, 1, 0.05, 0.3),
+    vineLeaves: number('Hanging vines', 'vineLeaves', 'Leaves', 'How closely leaves grow along each vine.', 0, 1, 0.05, 0.65),
 
     fruitCount: number(FRUIT, 'fruitCount', 'Fruit', 'How much fruit each clump carries. On a palm, how many in the whole crown.', 0, 12, 1, 0, 'count'),
     fruitSize: number(FRUIT, 'fruitSize', 'Fruit size', 'How big each fruit is.', 0.5, 2, 0.05, 1),
@@ -172,6 +178,13 @@ const BARK_PATTERN = {
     default: 'none',
 } as const satisfies ChoiceParameter<BarkPattern>
 
+const BARK_FINISH = {
+    kind: 'choice', group: BARK, key: 'barkFinish', label: 'Wood finish',
+    help: 'Painted uses broad brush marks. Match material chooses it automatically for Ghibli.',
+    default: 'match',
+    options: [{value: 'match', label: 'Match material'}, {value: 'original', label: 'Original'}, {value: 'painted', label: 'Painted'}],
+} as const
+
 const BARK_TONE = {
     kind: 'choice',
     group: 'Colours',
@@ -219,6 +232,7 @@ const PALETTE = {
 } as const satisfies ChoiceParameter<PaletteId>
 
 export const paintedTreeParameterSpecs: readonly ParameterSpec[] = [
+    ...appearanceSpecs,
     FORM,
     NUMBERS.height,
     NUMBERS.trunkRadius,
@@ -251,6 +265,11 @@ export const paintedTreeParameterSpecs: readonly ParameterSpec[] = [
     FROND_STYLE,
     NUMBERS.strands,
     NUMBERS.strandLength,
+    NUMBERS.vines,
+    NUMBERS.vineLength,
+    NUMBERS.vineThickness,
+    NUMBERS.vineCurl,
+    NUMBERS.vineLeaves,
     NUMBERS.fruitCount,
     FRUIT_KIND,
     NUMBERS.fruitSize,
@@ -258,6 +277,7 @@ export const paintedTreeParameterSpecs: readonly ParameterSpec[] = [
     BARK_TONE,
     NUMBERS.colourVariation,
     BARK_PATTERN,
+    BARK_FINISH,
     NUMBERS.patternDepth,
     NUMBERS.patternScale,
     NUMBERS.brushStrokes,
@@ -326,6 +346,7 @@ export function controlsForTree(
                 !hidden.includes(spec.key) &&
                 (hasPattern || spec.key !== 'patternDepth') &&
                 (hasFruit || (spec.key !== 'fruitKind' && spec.key !== 'fruitSize')) &&
+                (Number(values.vines ?? 0) > 0 || spec.group !== 'Hanging vines' || spec.key === 'vines') &&
                 (values.palette !== 'custom' || spec.key !== 'barkTone'),
         )
         .map((spec) => (labels[spec.key] ? {...spec, label: labels[spec.key]} : spec))
@@ -396,13 +417,14 @@ export const COLOUR_LABELS: Readonly<Record<keyof Palette, string>> = {
 
 export type PaintedTreeParameters = {
     readonly [K in keyof typeof NUMBERS]: number
-} & Palette & {
+} & Palette & FoliageAppearance & {
         readonly palette: PaletteId
         readonly form: TreeForm
         readonly crownShape: CrownShape
         readonly frondStyle: FrondStyle
         readonly fruitKind: FruitKind
         readonly barkPattern: BarkPattern
+        readonly barkFinish: 'match' | 'original' | 'painted'
         readonly barkTone: BarkToneId
         /**
          * Hand edits to single parts, as JSON.
@@ -426,6 +448,7 @@ const WHOLE_NUMBERS: ReadonlySet<string> = new Set(
 )
 
 const paintedTreeSchema = z.object({
+    ...appearanceSchema,
     ...Object.fromEntries(
         Object.values(NUMBERS).map((spec) => [
             spec.key,
@@ -440,6 +463,7 @@ const paintedTreeSchema = z.object({
     frondStyle: choiceSchema(FROND_STYLE),
     fruitKind: choiceSchema(FRUIT_KIND),
     barkPattern: choiceSchema(BARK_PATTERN),
+    barkFinish: choiceSchema(BARK_FINISH),
     barkTone: choiceSchema(BARK_TONE),
     barkDeep: colour(PALETTES.blossom.barkDeep),
     barkLight: colour(PALETTES.blossom.barkLight),
@@ -450,6 +474,7 @@ const paintedTreeSchema = z.object({
 }) as unknown as z.ZodType<PaintedTreeParameters>
 
 export const paintedTreeDefaults: PaintedTreeParameters = {
+    ...appearanceDefaults,
     ...(Object.fromEntries(Object.values(NUMBERS).map((spec) => [spec.key, spec.default])) as {
         readonly [K in keyof typeof NUMBERS]: number
     }),
@@ -459,6 +484,7 @@ export const paintedTreeDefaults: PaintedTreeParameters = {
     frondStyle: FROND_STYLE.default,
     fruitKind: FRUIT_KIND.default,
     barkPattern: BARK_PATTERN.default,
+    barkFinish: BARK_FINISH.default,
     barkTone: BARK_TONE.default,
     ...PALETTES.blossom,
     edits: '',

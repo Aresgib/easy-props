@@ -14,6 +14,7 @@
  */
 
 import * as THREE from 'three'
+import type {Appearance} from '../style/appearance'
 import {addDaisy, addStrip, stemPath} from '../plants/plant-mesh'
 import {createSeededRandom, hashSeed, randomRange} from '../shared/random'
 import {colourRamp} from '../style/ramp'
@@ -21,6 +22,7 @@ import {FLOWER_ROWS, GRASS_ROWS, rampOf, type OwnColourValues, type OwnColours} 
 import {DRY_RAMP, GRASS_RAMPS, PETAL_RAMPS, STEM_RAMP, type GrassPaletteId, type PetalPaletteId} from '../style/palettes'
 
 export interface GrassParameters extends Partial<OwnColourValues<typeof GRASS_ROWS> & OwnColourValues<typeof FLOWER_ROWS>> {
+    readonly appearance: Appearance
     readonly width: number
     readonly height: number
     readonly blades: number

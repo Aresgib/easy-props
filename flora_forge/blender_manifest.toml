@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+id = "flora_forge"
+version = "1.2.0"
+name = "Flora Forge"
+tagline = "Vegetación estilizada con follaje suave y exportación a Godot"
+maintainer = "Flora Forge"
+type = "add-on"
+tags = ["Add Mesh", "Modeling", "Material"]
+blender_version_min = "4.2.0"
+license = ["SPDX:GPL-3.0-or-later"]
+
+[permissions]
+files = "Exportar vegetación, texturas y shaders al directorio elegido"
+
+[build]
+paths_exclude_pattern = ["__pycache__/", "*.pyc"]

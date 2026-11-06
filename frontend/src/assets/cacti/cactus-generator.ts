@@ -3,6 +3,7 @@
  */
 
 import {z} from 'zod'
+import {APPEARANCE} from '../style/appearance'
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {PartGenerator, PropGenerator} from '../shared/generator-types'
 import {
@@ -94,6 +95,7 @@ const HIDDEN_BY_KIND: Readonly<Record<CactusKind, readonly string[]>> = {
 }
 
 export const cactusDefaults: CactusParameters = {
+    appearance: APPEARANCE.default,
     kind: KIND.default,
     height: HEIGHT.default,
     thickness: THICKNESS.default,
@@ -112,6 +114,7 @@ export const cactusDefaults: CactusParameters = {
 const whole = (spec: NumberParameter) => numberSchema(spec).transform((value) => Math.round(value))
 
 const cactusSchema = z.object({
+    appearance: choiceSchema(APPEARANCE),
     kind: choiceSchema(KIND),
     height: numberSchema(HEIGHT),
     thickness: numberSchema(THICKNESS),
@@ -170,7 +173,7 @@ export const cactusBodyGenerator: PartGenerator<CactusBodyParameters> = {
             geometry: buildCactusMesh(cactus, seed, detail),
             material: 'painted',
             role: 'solid',
-            surface: {vertexColors: true},
+            surface: {vertexColors: true, appearance: cactus.appearance},
         }
     },
 }
@@ -181,7 +184,7 @@ export const cactusGenerator: PropGenerator<CactusParameters> = {
     label: 'Cactus',
     // Short barrels and pads are rarely seen from far off.
     farAway: (parameters) => parameters.kind === 'column',
-    parameters: specs,
+    parameters: [APPEARANCE, ...specs],
     paintsOwnColours: true,
     still: true,
     budgetAdvice: 'Lower Spines, Ridges or Pads.',

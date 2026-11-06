@@ -13,6 +13,8 @@ import {RIGID_ATTRIBUTE} from '../../shared/generator-types'
 import {createSeededRandom, hashSeed, randomRange} from '../../shared/random'
 import {FRUIT_COLOURS, resolvePalette, type PaintedTreeParameters} from './parameters'
 import {cross, normalize, type Clump, type TreePlan, type Vec3} from './plan'
+import {addVines} from './vines'
+import {foliageSolidUv} from '../../shared/foliage-layout'
 
 /** The middle of the first dab, which is solid at every mip level. */
 const SOLID_UV = 0.25
@@ -37,9 +39,10 @@ export interface LeafBuffers {
     readonly indices: number[]
     /** Where fruit starts and ends among the vertices, in pairs: it sways whole. */
     readonly rigid: number[]
+    readonly solidUv?: readonly [number, number]
 }
 
-export const emptyLeafBuffers = (): LeafBuffers => ({positions: [], normals: [], colors: [], uvs: [], indices: [], rigid: []})
+export const emptyLeafBuffers = (tree?: PaintedTreeParameters): LeafBuffers => ({positions: [], normals: [], colors: [], uvs: [], indices: [], rigid: [], solidUv: tree ? foliageSolidUv(tree) : undefined})
 
 export function leafGeometry({positions, normals, colors, uvs, indices, rigid}: LeafBuffers): THREE.BufferGeometry {
     const geometry = new THREE.BufferGeometry()
@@ -95,7 +98,7 @@ function pushVertex(buffers: LeafBuffers, point: Vec3, normal: Vec3, colour: THR
     buffers.positions.push(point[0], point[1], point[2])
     buffers.normals.push(normal[0], normal[1], normal[2])
     buffers.colors.push(colour.r, colour.g, colour.b)
-    buffers.uvs.push(SOLID_UV, SOLID_UV)
+    buffers.uvs.push(...(buffers.solidUv ?? [SOLID_UV, SOLID_UV]))
 
     return index
 }
@@ -474,10 +477,12 @@ export function buildFrond(
     detail: number,
     share = 1,
 ): THREE.BufferGeometry {
-    const buffers = emptyLeafBuffers()
+    const buffers = emptyLeafBuffers(tree)
     const random = createSeededRandom(clump.seed)
     const paint = leafColours(tree, clump)
     const path = frondPath(clump, tree)
+
+    if (tree.vines > 0) addVines(buffers, plan, clump, tree, share)
 
     addStem(buffers, path, Math.max(clump.radius * 0.016, 0.012), paint, share)
 
