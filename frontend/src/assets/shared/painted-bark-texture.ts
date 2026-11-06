@@ -1,48 +1,87 @@
 import * as THREE from 'three'
-import {getBarkTexture, type BarkPrint} from './bark-texture'
-import {createSeededRandom} from './random'
 
 const SIZE = 512
 const cache = new Map<string, THREE.DataTexture>()
+const clamp = (value: number) => Math.min(1, Math.max(0, value))
+const hash = (x: number, y: number) => {
+    const value = Math.sin(x * 127.1 + y * 311.7 + 43117) * 43758.5453
+    return value - Math.floor(value)
+}
+const wrap = (value: number, size: number) => ((value % size) + size) % size
 
-/** Broad, overlapping brush marks; colour variation supplies detail instead of relief. */
-export function getPaintedBarkTexture(strength: number, pattern: BarkPrint): THREE.DataTexture {
-    const key = `${strength}:${pattern}`
-    const known = cache.get(key)
-    if (known) return known
-    const data = new Uint8Array(SIZE * SIZE * 4).fill(255)
-    const random = createSeededRandom(43117)
-    const colours = [[0.75, 0.79, 0.68], [1, 0.92, 0.72], [0.5, 0.6, 0.62], [0.88, 0.9, 0.75]]
+/** Periodic, elongated Voronoi cells: patches of pigment rather than rectangles over bark. */
+function patch(u: number, v: number, columns: number, rows: number, salt: number): number {
+    const x = u * columns
+    const y = v * rows
+    const cx = Math.floor(x)
+    const cy = Math.floor(y)
+    let distance = Infinity
+    let colour = 0
 
-    for (let stroke = 0; stroke < 130; stroke++) {
-        const cx = Math.floor(random() * SIZE)
-        const cy = Math.floor(random() * SIZE)
-        const width = 7 + random() * 23
-        const length = 25 + random() * 80
-        const lean = (random() - 0.5) * 0.55
-        const colour = colours[Math.floor(random() * colours.length)]
-        const opacity = Math.min(1, strength * (0.45 + random() * 0.45))
-        for (let y = -Math.ceil(length); y <= length; y++) {
-            const taper = 1 - Math.abs(y / length) * 0.2
-            for (let x = -Math.ceil(width); x <= width; x++) {
-                if (Math.abs(x / width) > taper) continue
-                const px = ((Math.round(cx + x + y * lean) % SIZE) + SIZE) % SIZE
-                const py = ((cy + y) % SIZE + SIZE) % SIZE
-                const at = (py * SIZE + px) * 4
-                for (let channel = 0; channel < 3; channel++) data[at + channel] = Math.round(data[at + channel] * (1 - opacity) + colour[channel] * 255 * opacity)
+    for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+            const px = wrap(cx + dx, columns)
+            const py = wrap(cy + dy, rows)
+            const ox = cx + dx + 0.5 + (hash(px + salt, py) - 0.5) * 0.68 - x
+            const oy = cy + dy + 0.5 + (hash(px, py + salt) - 0.5) * 0.68 - y
+            const d = ox * ox + oy * oy
+            if (d < distance) {
+                distance = d
+                colour = hash(px + salt * 2, py + salt)
             }
         }
     }
-    if (pattern !== 'none') {
-        const original = getBarkTexture(strength, pattern).image.data as Uint8Array
-        for (let at = 0; at < data.length; at += 4) {
-            for (let channel = 0; channel < 3; channel++) data[at + channel] *= 0.5 + original[at + channel] / 510
+    return colour
+}
+
+export interface PaintedWoodSettings {
+    readonly contrast: number
+    readonly scale: number
+    readonly moss: number
+    readonly baseShade: number
+    readonly shadow: string
+    readonly light: string
+}
+
+/** Approximation of the reference's Voronoi, layered noise, moss and cool base paint. */
+export function getPaintedBarkTexture(settings: PaintedWoodSettings): THREE.DataTexture {
+    const key = JSON.stringify(settings)
+    const known = cache.get(key)
+    if (known) return known
+    const data = new Uint8Array(SIZE * SIZE * 4).fill(255)
+    const deep = new THREE.Color(settings.shadow)
+    const light = new THREE.Color(settings.light)
+    const moss = new THREE.Color('#65794e')
+    const cool = new THREE.Color('#3e495a')
+    const paint = new THREE.Color()
+    const columns = Math.max(3, Math.round(7 / settings.scale))
+    const rows = Math.max(2, Math.round(10 / settings.scale))
+
+    for (let y = 0; y < SIZE; y++) {
+        const v = (y + 0.5) / SIZE
+        for (let x = 0; x < SIZE; x++) {
+            const u = (x + 0.5) / SIZE
+            const broad = patch(u, v, columns, rows, 7)
+            const fine = patch(u, v, columns * 3, rows * 3, 31)
+            const mark = clamp(0.58 + ((broad - 0.5) * 0.9 + (fine - 0.5) * 0.22) * settings.contrast)
+            paint.copy(deep).lerp(light, mark)
+            paint.multiplyScalar(1 + Math.max(0, fine - 0.6) * 0.8 * settings.contrast)
+            const growth = clamp((patch(u, v, Math.max(2, Math.round(columns / 2)), rows, 53) - 0.48) * 3)
+            paint.lerp(moss, growth * settings.moss)
+            const base = clamp(1 - v / 0.38) * settings.baseShade
+            paint.lerp(cool, base * 0.55).multiplyScalar(1 - base * 0.35)
+            paint.convertLinearToSRGB()
+            const at = (y * SIZE + x) * 4
+            data[at] = Math.round(clamp(paint.r) * 255)
+            data[at + 1] = Math.round(clamp(paint.g) * 255)
+            data[at + 2] = Math.round(clamp(paint.b) * 255)
         }
     }
     const texture = new THREE.DataTexture(data, SIZE, SIZE, THREE.RGBAFormat)
     texture.name = `painted-wood-${key}`
     texture.colorSpace = THREE.SRGBColorSpace
-    texture.wrapS = texture.wrapT = THREE.RepeatWrapping
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.ClampToEdgeWrapping
     texture.minFilter = THREE.LinearMipmapLinearFilter
     texture.magFilter = THREE.LinearFilter
     texture.generateMipmaps = true

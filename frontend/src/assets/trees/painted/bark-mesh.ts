@@ -16,7 +16,7 @@
 
 import * as THREE from 'three'
 import {joinChunks, packedCell as packed, sculptCells, type MeshBuffers, type SurfaceChunk} from '../../shared/surface-nets'
-import {resolvePalette, type PaintedTreeParameters} from './parameters'
+import {resolvePalette, usesPaintedWood, woodParameters, type PaintedTreeParameters} from './parameters'
 import {cross, normalize, perpendicularTo, type Limb, type TreePlan, type Vec3} from './plan'
 import {createWoodField, type WoodField} from './wood-field'
 
@@ -121,8 +121,8 @@ interface MappedLimb {
     readonly reach: number
 }
 
-function mapLimb(limb: Limb, barkSize: number): MappedLimb {
-    const wraps = Math.max(1, Math.round((BARK_WRAPS[limb.level] ?? 1) / barkSize))
+function mapLimb(limb: Limb, barkSize: number, painted: boolean): MappedLimb {
+    const wraps = painted ? 1 : Math.max(1, Math.round((BARK_WRAPS[limb.level] ?? 1) / barkSize))
     const frames: Vec3[] = []
     const along = [0]
     let frame = perpendicularTo(tangentAt(limb, 0))
@@ -199,9 +199,9 @@ function placeOnLimb({limb, frames, along, wraps}: MappedLimb, x: number, y: num
  * to the nearest limb, and a vertex shared between two limbs or across the texture's
  * edge simply becomes two, leaving the number of faces alone.
  */
-function printAlongLimbs(buffers: MeshBuffers, limbs: readonly Limb[], barkSize: number): {buffers: MeshBuffers; uvs: number[]} {
+function printAlongLimbs(buffers: MeshBuffers, limbs: readonly Limb[], barkSize: number, painted: boolean): {buffers: MeshBuffers; uvs: number[]} {
     const {positions: p, normals: n, colors: c, indices} = buffers
-    const mapped = limbs.map((limb) => mapLimb(limb, barkSize))
+    const mapped = limbs.map((limb) => mapLimb(limb, barkSize, painted))
     const out: MeshBuffers = {positions: [], normals: [], colors: [], indices: []}
     const uvs: number[] = []
     const owners = new Map<number, number>()
@@ -329,6 +329,11 @@ export function sculptBarkCells(context: BarkContext, cells: Int32Array): BarkCh
  * the place one becomes the other cannot show as a change of colour.
  */
 function woodPainter({field, tree}: BarkContext): (x: number, y: number, z: number, n: Vec3) => THREE.Color {
+    // The painted finish carries its pigment in its own procedural picture.
+    if (usesPaintedWood(tree)) {
+        const pigment = new THREE.Color()
+        return () => pigment.setRGB(1, 1, 1)
+    }
     const palette = resolvePalette(tree)
     const deep = new THREE.Color(palette.barkDeep)
     const light = new THREE.Color(palette.barkLight)
@@ -611,6 +616,7 @@ export function prepareBark(
     seed: number,
     detail: number,
 ): BarkContext {
+    tree = woodParameters(tree)
     // A lighter level can go below what a fine surface needs, so its floor rises with it.
     const floor = MIN_CELL * Math.sqrt(Math.max(FULL_FLOOR_DETAIL / detail, 1))
     // A palm's slim trunk has no flare, and stays a sculpted surface at every level, not a bare tube.
@@ -711,6 +717,7 @@ export function assembleBark(
             field,
             (x, y, z, n, along) => {
                 ink.copy(deep).lerp(light, 0.1 + (n[1] * 0.5 + 0.5) * 0.5)
+                if (usesPaintedWood(tree)) ink.setRGB(1, 1, 1)
 
                 // By how far along, not how thin: a twig is thin from its first ring,
                 // and would start as a dark spike on the paler wood it grows from.
@@ -722,7 +729,13 @@ export function assembleBark(
         )
     }
 
-    const printed = printAlongLimbs(buffers, plan.limbs, tree.patternScale)
+    const printed = printAlongLimbs(buffers, plan.limbs, tree.patternScale, usesPaintedWood(tree))
+    if (usesPaintedWood(tree)) {
+        // One height gradient for the whole tree, so the cool base never repeats on branches.
+        for (let at = 0; at < printed.buffers.positions.length / 3; at++) {
+            printed.uvs[at * 2 + 1] = printed.buffers.positions[at * 3 + 1] / Math.max(tree.height, 0.001)
+        }
+    }
 
     return {
         positions: Float32Array.from(printed.buffers.positions),

@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><title>Revisión de Ghibli</title>
+<style>body{margin:0;background:#303336;color:#eee;font:18px sans-serif}main{display:flex}figure{margin:12px;flex:1}img{width:100%;display:block}pre{white-space:pre-wrap;color:#ff9c9c}</style>
+<main id="pictures"></main><pre id="errors"></pre>
+<script type="module">
+import {renderTreeThumbnail} from '/src/core/export/tree-thumbnail.ts'
+import {createSceneFromPreset} from '/src/core/scene/initial-scene.ts'
+import {updateTreeParameters} from '/src/core/scene/scene-ops.ts'
+import {getStyleProfile} from '/src/assets/style/style-profiles.ts'
+const style = getStyleProfile('detailed')
+const error = console.error.bind(console)
+console.error = (...args) => {error(...args); document.getElementById('errors').textContent += args.join(' ') + '\n'}
+for (const [name, preset, patch] of [['Árbol Ghibli','ghibli-tree',{}],['Arbusto Ghibli','ghibli-bush',{}],['Corteza pintada','ghibli-tree',{clumpCount:0,rootCount:0,height:4,spread:1.8,trunkRadius:0.4,limbCount:2,branchCount:1,twigCount:0}]]) {
+    let scene = createSceneFromPreset(preset)
+    if (Object.keys(patch).length) scene = updateTreeParameters(scene,scene.assets[0].id,patch,style)
+    const picture = await renderTreeThumbnail(scene,{style,size:900})
+    const figure = document.createElement('figure')
+    const caption = document.createElement('figcaption')
+    caption.textContent = name
+    const img = document.createElement('img')
+    img.src = picture
+    figure.append(caption,img)
+    document.getElementById('pictures').append(figure)
+}
+document.body.dataset.done = 'true'
+</script></html>

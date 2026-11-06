@@ -1,11 +1,12 @@
 import * as THREE from 'three'
 import {choiceSchema, numberSchema, type ParameterSpec} from '../shared/parameters'
 import {prepareToonColours} from './toon-colours'
+import {GHIBLI_FUNCTIONS} from './ghibli'
 
 export type Appearance = 'natural' | 'fluffy' | 'cel' | 'ink' | 'ghibli'
 export type LeafPattern = 'original' | 'oval' | 'oak' | 'maple' | 'needle' | 'tree-leaves-01' | 'tree-leaves-02' | 'tree-leaves-03'
 
-export const appearanceVersion = (appearance: string | undefined): number => appearance === 'cel' || appearance === 'ink' ? 2 : 1
+export const appearanceVersion = (appearance: string | undefined): number => appearance === 'ghibli' || appearance === 'cel' || appearance === 'ink' ? 2 : 1
 
 export const APPEARANCE = {
     kind: 'choice', group: 'Appearance', key: 'appearance', label: 'Material',
@@ -77,15 +78,11 @@ export const APPEARANCE_FRAGMENT = /* glsl */ `
         #endif
         float shade = smoothstep(-0.6, 0.8, dot(normalize(vPaintNormal), normalize(vec3(-0.45, 0.82, 0.35))));
         #if PAINT_STYLE == 4
-            vec3 shadow = paint * vec3(0.47, 0.66, 0.72);
-            vec3 sunlight = paint * vec3(1.35, 1.22, 0.85);
             #if PAINT_FOLIAGE == 1
-                float green = clamp((paint.g - max(paint.r, paint.b)) * 4.0, 0.0, 1.0);
-                float value = dot(paint, vec3(0.2126, 0.7152, 0.0722));
-                shadow = mix(paint * vec3(0.52, 0.72, 0.98), value * vec3(0.025, 0.4, 0.75), green * 0.75);
-                sunlight = mix(paint * vec3(1.22, 1.2, 0.87), value * vec3(1.6, 1.65, 0.35), green * 0.3);
+                outgoingLight = ghibliLeaves(paint, vPaintNormal, vPaintPosition);
+            #else
+                outgoingLight = ghibliWood(paint, vPaintNormal);
             #endif
-            outgoingLight = mix(shadow, sunlight, smoothstep(0.18, 0.9, shade));
         #else
         float blendWidth = clamp(fwidth(shade) * 0.65, 0.004, 0.035);
         float middle = smoothstep(0.42 - blendWidth, 0.42 + blendWidth, shade);
@@ -127,13 +124,18 @@ export function applyAppearance(material: THREE.MeshStandardMaterial, appearance
         shader.vertexShader = shader.vertexShader
             .replace('#include <common>', '#include <common>\nvarying vec3 vPaintNormal;')
             .replace('#include <defaultnormal_vertex>', '#include <defaultnormal_vertex>\nvPaintNormal = inverseTransformDirection(transformedNormal, viewMatrix);')
+        if (style === 4) {
+            shader.vertexShader = shader.vertexShader
+                .replace('#include <common>', '#include <common>\nvarying vec3 vPaintPosition;')
+                .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintPosition = (modelMatrix * vec4(position, 1.0)).xyz;')
+        }
         if (style >= 2) {
             shader.vertexShader = shader.vertexShader
                 .replace('#include <common>', '#include <common>\nattribute vec3 paintColour;\nvarying vec3 vPaintColour;')
                 .replace('#include <begin_vertex>', '#include <begin_vertex>\nvPaintColour = paintColour;')
         }
         shader.fragmentShader = shader.fragmentShader
-            .replace('#include <common>', `#include <common>\nvarying vec3 vPaintNormal;\n${style >= 2 ? 'varying vec3 vPaintColour;' : ''}\n#define PAINT_STYLE ${style}\n#define PAINT_FOLIAGE ${foliage ? 1 : 0}`)
+            .replace('#include <common>', `#include <common>\nvarying vec3 vPaintNormal;\n${style >= 2 ? 'varying vec3 vPaintColour;' : ''}\n${style === 4 ? `varying vec3 vPaintPosition;\n${GHIBLI_FUNCTIONS}` : ''}\n#define PAINT_STYLE ${style}\n#define PAINT_FOLIAGE ${foliage ? 1 : 0}`)
             .replace('#include <opaque_fragment>', `${APPEARANCE_FRAGMENT}\n#include <opaque_fragment>`)
     }
     material.customProgramCacheKey = () => `${key}:paint-${style}-${appearanceVersion(appearance)}-${foliage ? 'leaves' : 'solid'}`

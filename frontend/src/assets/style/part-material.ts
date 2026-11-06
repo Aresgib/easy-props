@@ -31,6 +31,6 @@ export function createPartMaterial(
         normalMap: surface?.normalMap ?? null,
         alphaTest: surface?.alphaTest ?? 0,
     })
-    applyAppearance(material, surface?.appearance, part.geometry, roleOfPart(part) === 'foliage')
+    applyAppearance(material, surface?.appearance, part.geometry, surface?.foliageShading ?? roleOfPart(part) === 'foliage')
     return material
 }

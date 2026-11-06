@@ -24,6 +24,7 @@ import {
     isPaintedPart,
     resolvePalette,
     sectionsForPart,
+    usesPaintedWood,
     validatePaintedTreeParameters,
     type Palette,
 } from '../assets/trees/painted'
@@ -36,6 +37,7 @@ import {useEditorStore} from '../store/editor-store'
 import {useSettingsStore} from '../store/settings-store'
 import {useUiStore} from '../store/ui-store'
 import {ownColoursPatch, paletteChoiceFor} from './palette-choice'
+import {withOwnColoursShown} from '../assets/style/own-colours'
 import {TRUNK_TREE_KEYS} from './trunk-controls'
 
 /** Parts that stand for the whole prop, or hang off its plan, so they stay where they are. */
@@ -219,10 +221,12 @@ function PaletteColours({
 }) {
     const filter = useContext(FilterContext)
     const palette = currentPalette(values)
+    const painted = usesPaintedWood(values)
 
     return (
         <>
             {keys
+                .filter((key) => !painted || !key.startsWith('bark'))
                 .filter((key) => answers(filter, COLOUR_LABELS[key], 'colour'))
                 .map((key) => (
                     <ColourRow
@@ -520,7 +524,7 @@ export function Details() {
         updateComponentParameters(component.id, {[key]: value}, `change ${key}`)
     }
 
-    const sections = sectionsForPart(component.generatorId, component.type)
+    const sections = sectionsForPart(component.generatorId, component.type, asset?.parameters ?? {})
     const partTitles = ['This part', 'Position', 'Turn', ...sections.map(({title}) => title)]
     const title = isFrond ? 'Frond' : describeComponent(component.type)
 
@@ -615,7 +619,7 @@ export function Details() {
                             onToggle={() => groups.toggle(section.title, partTitles)}
                         >
                             <ParameterControls
-                                specs={controlsForTree(section.specs, asset?.parameters ?? {})}
+                                specs={withOwnColoursShown(controlsForTree(section.specs, asset?.parameters ?? {}), asset?.parameters ?? {})}
                                 values={asset?.parameters ?? {}}
                                 base={presetBase(presetId)}
                                 palettes={{specs: treeSpecs, onPatch: updateTreeParameters}}

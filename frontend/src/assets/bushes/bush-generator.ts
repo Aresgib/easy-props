@@ -193,7 +193,7 @@ export const bushCoreGenerator: PartGenerator<BushPartParameters> = {
             geometry: buildBushCore(bush, seed, detail),
             material: 'painted',
             role: 'solid',
-            surface: {vertexColors: true, appearance: bush.appearance},
+            surface: {vertexColors: true, appearance: bush.appearance, foliageShading: true},
         }
     },
 }

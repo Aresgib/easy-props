@@ -16,6 +16,7 @@ import {getPaintedBarkTexture} from '../../shared/painted-bark-texture'
 import type {PartGenerator} from '../../shared/generator-types'
 import type {ParameterSpec, ValidationResult} from '../../shared/parameters'
 import type {StyleProfile} from '../../style/style-profiles'
+import {paintedWoodColours, usesPaintedWood, woodParameters} from '../painted/parameters'
 import {
     buildBark,
     buildBarkOffThread,
@@ -97,7 +98,7 @@ const LEAF_ONLY_KEYS: readonly (keyof PaintedTreeParameters)[] = [
 
 export const paintedBarkGenerator: PartGenerator<PaintedPartParameters> = {
     id: 'painted-bark',
-    version: 6,
+    version: 7,
     type: 'bark',
     label: 'Bark',
     // The tree's controls live on the tree: one rebuild, one undo step.
@@ -114,7 +115,7 @@ export const paintedBarkGenerator: PartGenerator<PaintedPartParameters> = {
     signature({tree, seed}) {
         const palette = resolvePalette(tree)
         const wood = Object.fromEntries(
-            Object.entries(tree).filter(
+            Object.entries(woodParameters(tree)).filter(
                 ([key]) =>
                     !LEAF_ONLY_KEYS.includes(key as keyof PaintedTreeParameters) &&
                     !(COLOUR_KEYS as readonly string[]).includes(key) &&
@@ -129,14 +130,15 @@ export const paintedBarkGenerator: PartGenerator<PaintedPartParameters> = {
     scalesWithDetail: true,
 
     dress(geometry, {tree}) {
-        const painted = tree.barkFinish === 'painted' || (tree.barkFinish === 'match' && tree.appearance === 'ghibli')
+        const painted = usesPaintedWood(tree)
+        const [shadow, light] = paintedWoodColours(tree)
         return {
             geometry,
             material: 'painted',
             surface: {
                 vertexColors: true,
-                appearance: tree.appearance,
-                map: painted ? getPaintedBarkTexture(tree.brushStrokes, tree.barkPattern) : getBarkTexture(tree.brushStrokes, tree.barkPattern),
+                appearance: painted ? 'ghibli' : tree.appearance === 'ghibli' ? 'natural' : tree.appearance,
+                map: painted ? getPaintedBarkTexture({contrast: tree.paintedStrokes, scale: tree.paintedScale, moss: tree.paintedMoss, baseShade: tree.paintedBaseShade, shadow, light}) : getBarkTexture(tree.brushStrokes, tree.barkPattern),
                 normalMap: painted ? undefined : getBarkRelief(tree.barkPattern),
             },
             role: 'solid',
@@ -215,7 +217,7 @@ function findClump(tree: PaintedTreeParameters, seed: number, key: string): Clum
 
 export const paintedClumpGenerator: PartGenerator<PaintedKeyedParameters> = {
     id: 'painted-clump',
-    version: 2,
+    version: 3,
     type: 'foliage-cluster',
     label: 'Leaf clump',
     parameters: CLUMP_SPECS,

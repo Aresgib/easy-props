@@ -42,6 +42,8 @@ export interface CollisionShape {
 export interface PaintedSurface {
     readonly vertexColors: boolean
     readonly appearance?: Appearance
+    /** A solid inside a bush takes the same painted light as its leaves. */
+    readonly foliageShading?: boolean
     readonly map?: THREE.Texture
     /** Fine relief for light to catch. Needs a `map`, whose texture coordinates it shares. */
     readonly normalMap?: THREE.Texture

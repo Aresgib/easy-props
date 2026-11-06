@@ -215,7 +215,7 @@ export function mergeParts(
 
         // A textured part cannot share with one that has nowhere to read the texture.
         const surface = placed.part.surface
-        const key = JSON.stringify([bucketName(placed), surface?.map?.uuid, surface?.normalMap?.uuid, surface?.alphaTest ?? 0, surface?.appearance ?? 'natural'])
+        const key = JSON.stringify([bucketName(placed), surface?.map?.uuid, surface?.normalMap?.uuid, surface?.alphaTest ?? 0, surface?.appearance ?? 'natural', surface?.foliageShading ?? false])
         const bucket = buckets.get(key) ?? []
 
         bucket.push(placed)
@@ -257,7 +257,7 @@ export function mergeParts(
             normalScale: new THREE.Vector2(1, -1),
             alphaTest: surface?.alphaTest ?? 0,
         })
-        applyAppearance(material, surface?.appearance, undefined, roleOfPart(bucket[0].part) === 'foliage')
+        applyAppearance(material, surface?.appearance, undefined, surface?.foliageShading ?? roleOfPart(bucket[0].part) === 'foliage')
         merged.push({
             name: meshName,
             geometry,

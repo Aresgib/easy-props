@@ -17,6 +17,7 @@ import {
 } from '../../shared/parameters'
 import {BARK_TONES, PALETTES, type BarkToneId, type Palette, type PaletteId} from '../../style/palettes'
 import {appearanceDefaults, appearanceSchema, appearanceSpecs, type FoliageAppearance} from '../../style/appearance'
+import {ownColours, rampOf, type OwnColourValues} from '../../style/own-colours'
 
 export {BARK_TONES, PALETTES}
 export type {BarkToneId, Palette, PaletteId}
@@ -44,6 +45,7 @@ const TRUNK = 'Trunk'
 const BRANCHES = 'Branches'
 const LEAVES = 'Leaves'
 const BARK = 'Bark detail'
+const PAINTED_WOOD = 'Painted wood'
 const FRUIT = 'Fruit'
 
 const NUMBERS = {
@@ -97,6 +99,10 @@ const NUMBERS = {
     moss: number(BARK, 'moss', 'Moss', 'Green growth on the upper sides of the wood.', 0, 1, 0.05, 0),
     patternDepth: number(BARK, 'patternDepth', 'Pattern depth', 'How strongly the bark pattern shows.', 0, 1, 0.05, 0.5),
     patternScale: number(BARK, 'patternScale', 'Bark size', 'How big each plate or mark on the wood is.', 0.6, 2, 0.05, 1),
+    paintedStrokes: number(PAINTED_WOOD, 'paintedStrokes', 'Paint contrast', 'How strongly the patches of paint stand apart.', 0, 2, 0.05, 1),
+    paintedScale: number(PAINTED_WOOD, 'paintedScale', 'Patch size', 'How big the patches of paint are.', 0.4, 3, 0.05, 1),
+    paintedMoss: number(PAINTED_WOOD, 'paintedMoss', 'Moss', 'Green patches mixed into the painted wood.', 0, 1, 0.05, 0.3),
+    paintedBaseShade: number(PAINTED_WOOD, 'paintedBaseShade', 'Base shade', 'How much cooler and darker the paint is near the base.', 0, 1, 0.05, 0.45),
 } as const
 
 const FORM = {
@@ -205,6 +211,43 @@ const BARK_TONE = {
     default: 'palette',
 } as const satisfies ChoiceParameter<BarkToneId>
 
+const PAINTED_TONE = {
+    kind: 'choice', group: PAINTED_WOOD, key: 'paintedTone', label: 'Paint colours',
+    help: 'The painted finish keeps its own colours when switching wood finishes.',
+    default: 'reference',
+    options: [
+        {value: 'reference', label: 'Forest paint'},
+        {value: 'warm', label: 'Warm paint'},
+        {value: 'pale', label: 'Pale paint'},
+        {value: 'custom', label: 'My own colours'},
+    ],
+} as const
+
+const PAINTED_RAMPS = {
+    reference: ['#382319', '#a69962'],
+    warm: ['#452919', '#bf9a64'],
+    pale: ['#565254', '#d2ccb2'],
+} as const
+const PAINTED_ROWS = [
+    {key: 'paintedShadow', label: 'Paint shadow'},
+    {key: 'paintedLight', label: 'Paint light'},
+] as const
+const OWN_PAINTED = ownColours(PAINTED_TONE, PAINTED_RAMPS, PAINTED_ROWS, 'painted-wood')
+
+export const usesPaintedWood = (values: {readonly barkFinish?: unknown; readonly appearance?: unknown}): boolean =>
+    values.barkFinish === 'painted' || ((values.barkFinish ?? 'match') === 'match' && values.appearance === 'ghibli')
+
+/** Only the active finish supplies surface detail; shape controls still belong to the tree. */
+export function woodParameters(tree: PaintedTreeParameters): PaintedTreeParameters {
+    return usesPaintedWood(tree)
+        ? {...tree, roughness: 0, barkPattern: 'none', patternDepth: 0, patternScale: 1, brushStrokes: 0, moss: 0}
+        : tree
+}
+
+export function paintedWoodColours(tree: PaintedTreeParameters): readonly string[] {
+    return rampOf(tree.paintedTone, PAINTED_RAMPS, tree, PAINTED_ROWS)
+}
+
 const PALETTE = {
     kind: 'choice',
     group: 'Colours',
@@ -286,6 +329,12 @@ export const paintedTreeParameterSpecs: readonly ParameterSpec[] = [
     NUMBERS.burls,
     NUMBERS.hollow,
     NUMBERS.moss,
+    PAINTED_TONE,
+    ...OWN_PAINTED.specs,
+    NUMBERS.paintedStrokes,
+    NUMBERS.paintedScale,
+    NUMBERS.paintedMoss,
+    NUMBERS.paintedBaseShade,
 ]
 
 /** Controls a form has no use for. */
@@ -339,11 +388,15 @@ export function controlsForTree(
     const labels = LABELS_BY_FORM[form] ?? {}
     const hasPattern = (values.barkPattern ?? BARK_PATTERN.default) !== 'none'
     const hasFruit = Number(values.fruitCount ?? 0) > 0
+    const painted = usesPaintedWood(values)
+    const originalOnly = ['barkPattern', 'patternDepth', 'patternScale', 'brushStrokes', 'roughness', 'moss', 'barkTone']
 
     return specs
         .filter(
             (spec) =>
                 !hidden.includes(spec.key) &&
+                (!painted || !originalOnly.includes(spec.key)) &&
+                (painted || spec.group !== PAINTED_WOOD) &&
                 (hasPattern || spec.key !== 'patternDepth') &&
                 (hasFruit || (spec.key !== 'fruitKind' && spec.key !== 'fruitSize')) &&
                 (Number(values.vines ?? 0) > 0 || spec.group !== 'Hanging vines' || spec.key === 'vines') &&
@@ -378,6 +431,7 @@ const TRUNK_SECTIONS: readonly ControlSection[] = [
         specsInGroup(TRUNK).filter((spec) => spec !== NUMBERS.rootCount && spec !== NUMBERS.rootLength),
     ),
     section('Bark detail', 'The surface of the wood.', specsInGroup(BARK)),
+    section(PAINTED_WOOD, 'Paint colours and patches, kept separately from the original finish.', specsInGroup(PAINTED_WOOD)),
     section('Bark colours', 'The colours of the wood.', [], ['barkDeep', 'barkLight']),
 ]
 
@@ -388,9 +442,9 @@ const TRUNK_SECTIONS: readonly ControlSection[] = [
  * away. Roots, branches and clumps come and go with the tree's counts, so a
  * tree control under one could delete the very part being edited.
  */
-export function sectionsForPart(generatorId: string, type: string): readonly ControlSection[] {
+export function sectionsForPart(generatorId: string, type: string, values: Readonly<Record<string, unknown>> = {}): readonly ControlSection[] {
     return generatorId === 'painted-bark' || (generatorId === 'painted-limb' && type === 'trunk')
-        ? TRUNK_SECTIONS
+        ? TRUNK_SECTIONS.filter((item) => (item.title !== PAINTED_WOOD || usesPaintedWood(values)) && (item.title !== 'Bark colours' || !usesPaintedWood(values)))
         : []
 }
 
@@ -418,6 +472,7 @@ export const COLOUR_LABELS: Readonly<Record<keyof Palette, string>> = {
 export type PaintedTreeParameters = {
     readonly [K in keyof typeof NUMBERS]: number
 } & Palette & FoliageAppearance & {
+        readonly paintedTone: 'reference' | 'warm' | 'pale' | 'custom'
         readonly palette: PaletteId
         readonly form: TreeForm
         readonly crownShape: CrownShape
@@ -433,7 +488,7 @@ export type PaintedTreeParameters = {
          * all treat it like a slider, and a rebuild can never lose one.
          */
         readonly edits: string
-    }
+    } & OwnColourValues<typeof PAINTED_ROWS>
 
 const colour = (fallback: string) =>
     z
@@ -465,6 +520,8 @@ const paintedTreeSchema = z.object({
     barkPattern: choiceSchema(BARK_PATTERN),
     barkFinish: choiceSchema(BARK_FINISH),
     barkTone: choiceSchema(BARK_TONE),
+    paintedTone: choiceSchema(PAINTED_TONE),
+    ...OWN_PAINTED.schema,
     barkDeep: colour(PALETTES.blossom.barkDeep),
     barkLight: colour(PALETTES.blossom.barkLight),
     leafDeep: colour(PALETTES.blossom.leafDeep),
@@ -486,6 +543,9 @@ export const paintedTreeDefaults: PaintedTreeParameters = {
     barkPattern: BARK_PATTERN.default,
     barkFinish: BARK_FINISH.default,
     barkTone: BARK_TONE.default,
+    paintedTone: PAINTED_TONE.default,
+    paintedShadow: PAINTED_RAMPS.reference[0],
+    paintedLight: PAINTED_RAMPS.reference[1],
     ...PALETTES.blossom,
     edits: '',
 }

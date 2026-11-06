@@ -205,7 +205,7 @@ export function buildClump(
             clump.base[1] + local[1] - plan.crownCentre[1],
             clump.base[2] + local[2] - plan.crownCentre[2],
         ])
-        const n = normalize([
+        const n = tree.appearance === 'ghibli' ? normalize([local[0], local[1] / (clump.flatten * clump.flatten), local[2]]) : normalize([
             out[0] * (1 - CROWN_SHARE) + crown[0] * CROWN_SHARE,
             out[1] * (1 - CROWN_SHARE) + crown[1] * CROWN_SHARE,
             out[2] * (1 - CROWN_SHARE) + crown[2] * CROWN_SHARE,

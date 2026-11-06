@@ -29,6 +29,7 @@ export const PALETTE_SETS: readonly PaletteSet[] = [
     {set: 'grass', title: 'Grass', labels: GRASS_ROWS.map((row) => row.label), start: GRASS_RAMPS.meadow},
     {set: 'flowers', title: 'Flowers', labels: FLOWER_ROWS.map((row) => row.label), start: PETAL_RAMPS.pink},
     {set: 'cactus', title: 'Cacti', labels: CACTUS_ROWS.map((row) => row.label), start: CACTUS_RAMPS.desert},
+    {set: 'painted-wood', title: 'Painted wood', labels: ['Paint shadow', 'Paint light'], start: ['#382319', '#a69962']},
 ]
 
 /** A name no palette of the set has yet: "New palette", then "New palette 2" and on. */

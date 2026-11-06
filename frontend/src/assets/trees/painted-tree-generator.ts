@@ -9,7 +9,7 @@
 
 import {IDENTITY_TRANSFORM} from '../shared/component-types'
 import type {CollisionShape, GeneratedComponent, PropGenerator} from '../shared/generator-types'
-import {paintedBarkGenerator} from './components/painted-parts'
+import {paintedBarkGenerator, paintedClumpGenerator} from './components/painted-parts'
 import {
     paintedTreeDefaults,
     paintedTreeParameterSpecs,
@@ -69,7 +69,7 @@ function typeOf(limb: Limb): GeneratedComponent['type'] {
 
 export const paintedTreeGenerator: PropGenerator<PaintedTreeParameters> = {
     id: 'painted-tree',
-    version: 4,
+    version: 5,
     label: 'Painted tree',
     farAway: () => true,
     parameters: paintedTreeParameterSpecs,
@@ -124,7 +124,7 @@ export const paintedTreeGenerator: PropGenerator<PaintedTreeParameters> = {
                 id: `cmp-clump-${clump.key}`,
                 type: 'foliage-cluster',
                 generatorId: 'painted-clump',
-                generatorVersion: 2,
+                generatorVersion: paintedClumpGenerator.version,
                 parentId: bark.id,
                 transform: {...IDENTITY_TRANSFORM, position: clump.centre},
                 parameters: {
